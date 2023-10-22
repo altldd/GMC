@@ -2,7 +2,7 @@
 
 ##### This repository contains code for the paper *Fair Risk Control: A Generalized Framework for Calibrating Multi-group Fairness Risks*.
 
-### Sturcture
+### Structure
 
 The `src/` folder contains Python implementations for our GMC algorithm
 
@@ -54,7 +54,7 @@ For three simulations, we all need to preprocess the data to get the initial sco
 
 ##### FigSeg
 
-The original dataset can be acquired in [FASSEG-repository](https://github.com/massimomauro/FASSEG-repository). The U-net model implementation could refer to https://github.com/labmlai/annotated_deep_learning_paper_implementations/blob/master/labml_nn/unet/__init__.py and we provide a copy here.
+The original dataset can be acquired in [FASSEG-repository](https://github.com/massimomauro/FASSEG-repository). The U-net model implementation can refer to https://github.com/labmlai/annotated_deep_learning_paper_implementations/blob/master/labml_nn/unet/__init__.py and we provide a copy here.
 
 To generate the scoring functions, run `FigSeg.py` in `Datasets/FigSeg`
 
@@ -79,7 +79,7 @@ To generate the scoring functions, run `FairText.py` in `Datasets/FairText`
 
 ### Main Experiments
 
-After getting the initial score functions in the preprocessing stage, we run the main experiments and get the figures shown in the paper. We provide a copy of the figures in `fig/`
+After getting the initial score functions in the preprocessing stage, run the main experiments and get the figures shown in the paper. We provide a copy of the figures in `fig/`
 
 ##### FigSeg
 
@@ -95,4 +95,4 @@ Run `FairText.ipynb` in `experiments/`
 
 ### Reproducibility
 
-Our experiment is implemented on GeForce MX250 GPU with CUDA version 10.1. The random seeds for *FigSeg*, *HierClass* and *FairText* are 42, 1 and 16 respectively.
+Our experiment is implemented on GeForce MX250 GPU with CUDA version 10.1. The random seeds for *FigSeg*, *HierClass*, and *FairText* are 42, 1, and 16 respectively.

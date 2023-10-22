@@ -5,11 +5,11 @@ import numpy as np
 import torch
 import time
 import h5py
+import copy
 
 import sys
 import os
-os.environ["http_proxy"] = "http://127.0.0.1:7890"
-os.environ["https_proxy"] = "http://127.0.0.1:7890"
+
 
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 model = BertForPreTraining.from_pretrained("bert-base-uncased")
@@ -20,7 +20,6 @@ def data_preprocessing():
             "datasets/FairText/Data/text_corpus/sst.txt", "datasets/FairText/Data/text_corpus/wikitext.txt",
             "datasets/FairText/Data/text_corpus/yelp_review_1mb.txt", "datasets/FairText/Data/text_corpus/yelp_review_5mb.txt",
             "datasets/FairText/Data/text_corpus/yelp_review_10mb.txt", "datasets/FairText/Data/artificial_corpus.txt"]
-    #corpus = ["datasets/FairText/Data/artificial_corpus.txt"]
     indicator_path = {'female':"datasets/FairText/Data/female-word.txt", 'male':"datasets/FairText/Data/male-word.txt",
                 'well_profession':"datasets/FairText/Data/female-related occupations.txt", 
                 'less_porfession':"datasets/FairText/Data/male-related occupations.txt",
@@ -43,6 +42,8 @@ def data_preprocessing():
         with open(cor, 'r', encoding='gb2312', errors='ignore') as f:
             text_corpus = f.read()
         text_corpus = text_corpus.split('\n')
+        if cor=='datasets/FairText/Data/artificial_corpus.txt':
+            artificial_length = len(text_corpus)
         for sent in text_corpus:
             sent = sent.replace('.', ' .')
             sent = sent.replace(',', ' ,')
@@ -60,29 +61,29 @@ def data_preprocessing():
                 if token in gender_indicators:
                     f2 = i
                 if (f1!=-1) & (f2!=-1):
-                    #input.append("".join(filter(lambda s:(s in ' ') or ((s>='A')&(s<='Z'))or ((s>='a')&(s<='z')), sent)))
                     input.append(sent)
                     input_mask.append(f1+1)
                     length.append(len(tokens))
                     break
     print('input size: ', len(input))
     print(input[:3])
-    return input, input_mask, length
+    return input, input_mask, length, artificial_length
 
 
-def get_output(input, input_mask, savepath):
+def get_output(input, input_mask, savepath, name):
     os.makedirs(savepath, exist_ok=True)
     inputs = tokenizer(input, return_tensors="pt", padding=True, truncation=True)
     print('shape of input: ', inputs.input_ids.shape)
     label = []
     for i in range(len(input_mask)):
         inputs['attention_mask'][i][input_mask[i]] = 0
-        label.append(inputs.input_ids[i][input_mask[i]])
+        label.append(copy.deepcopy(inputs.input_ids[i][input_mask[i]]))
+        inputs.input_ids[i][input_mask[i]] = 103
     label = np.array(label)
     print('shape of label: ', label.shape)
     output = model(**inputs)
     print('shape of distribution: ', output.prediction_logits.shape)
-    f = h5py.File(os.path.join(savepath, 'Result.h'), 'w')
+    f = h5py.File(os.path.join(savepath, name), 'w')
     f['x'] = list(map(lambda x:x.encode(), input))
     f['p'] = softmax(output.prediction_logits.detach(), dim=-1).numpy()
     f['y'] = label
@@ -90,7 +91,7 @@ def get_output(input, input_mask, savepath):
     f.close()
 
 
-def get_output_for_accuracy_test(input, length, savepath):
+def get_output_for_accuracy_test(input, length, savepath, name):
     print(input)
     inputs = tokenizer(input, return_tensors="pt", padding=True, truncation=True)
     print('shape of input: ', inputs.input_ids.shape)
@@ -99,12 +100,13 @@ def get_output_for_accuracy_test(input, length, savepath):
     for i in range(len(input)):
         input_mask.append(np.random.randint(1, length[i]+1))
         inputs['attention_mask'][i][input_mask[i]] = 0
-        label.append(inputs.input_ids[i][input_mask[i]])
+        label.append(copy.deepcopy(inputs.input_ids[i][input_mask[i]]))
+        inputs.input_ids[i][input_mask[i]] = 103
     label = np.array(label)
     print('shape of label: ', label.shape)
     output = model(**inputs)
     print('shape of distribution: ', output.prediction_logits.shape)
-    f = h5py.File(os.path.join(savepath, 'Accuracy_test.h'), 'w')
+    f = h5py.File(os.path.join(savepath, name), 'w')
     f['x'] = list(map(lambda x:x.encode(), input))
     f['p'] = softmax(output.prediction_logits.detach(), dim=-1).numpy()
     f['y'] = label
@@ -113,8 +115,10 @@ def get_output_for_accuracy_test(input, length, savepath):
 
 
 if __name__=='__main__':
-    # savepath = 'datasets/FairText/Result'
-    # input, input_mask, length = data_preprocessing()
-    # get_output(input[-1200:-600], input_mask[-1200:-600], savepath)
-    # get_output_for_accuracy_test(input[-1200:-600], length[-1200:-600], savepath)
-    print(1)
+    savepath = 'datasets/FairText/Result'
+    input, input_mask, length, artificial_length = data_preprocessing()
+    print(artificial_length)
+    get_output(input[-1500-artificial_length:-artificial_length], input_mask[-1500-artificial_length:-artificial_length], savepath, 'Result_1_1.h')
+    get_output_for_accuracy_test(input[-1500-artificial_length:-artificial_length], length[-1500-artificial_length:-artificial_length], savepath, 'Accuracy_test_1_1.h')
+    get_output(input[-artificial_length:], input_mask[-artificial_length:], savepath, 'Result_2.h')
+    get_output_for_accuracy_test(input[-artificial_length:], length[-artificial_length:], savepath, 'Accuracy_test_2.h')
